@@ -22,6 +22,8 @@ qt_add_qml_module(appVigilantHub
         SOURCES CameraThread.cpp
 SOURCES CameraProvider.h
 SOURCES CameraProvider.h
+SOURCES
+SOURCES
 
 )
 

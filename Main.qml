@@ -21,6 +21,7 @@ ApplicationWindow {
         property int frameCounter: 0
         onFrameCounterChanged: {
             source = "image://cameraProvider/frame?" + frameCounter;
+            console.log("Refreshing image. Frame counter:", frameCounter);
         }
 
         Timer {
@@ -34,11 +35,11 @@ ApplicationWindow {
 
         onStatusChanged: {
             if (status === Image.Ready) {
-                console.log("Image loaded successfully:", width, "x", height);
+                console.log("Image loaded successfully:", width, "x", height, "Frame counter:", frameCounter);
             } else if (status === Image.Error) {
-                console.log("Failed to load image from cameraProvider.");
+                console.log("Failed to load image from cameraProvider. Frame counter:", frameCounter);
             } else if (status === Image.Loading) {
-                console.log("Image is loading...");
+                console.log("Image is loading... Frame counter:", frameCounter);
             }
         }
 
@@ -94,7 +95,7 @@ ApplicationWindow {
             spacing: 10
 
             Text {
-                text: "Driver ID: Adam"
+                text: "Driver ID: XMC"
                 color: "#FFFFFF"
                 font.family: "Arial"
                 font.pixelSize: 16
