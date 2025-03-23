@@ -24,6 +24,8 @@ SOURCES CameraProvider.h
 SOURCES CameraProvider.h
 SOURCES
 SOURCES
+SOURCES MLProcessor.h
+SOURCES MLProcessor.cpp
 
 )
 

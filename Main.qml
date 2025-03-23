@@ -1,155 +1,204 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 ApplicationWindow {
     id: window
-    width: 800
-    height: 480
+    width: 1280
+    height: 720
     visible: true
     title: qsTr("VigilantHub")
-    color: "#1E1E1E"
+    color: "#1A1F2B"  // Dark Tesla-like blue-gray
 
+    Rectangle {
+        anchors.fill: parent
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#1A1F2B" }
+            GradientStop { position: 1.0; color: "#2E3440" }
+        }
+    }
+
+    // Header
+    Text {
+        text: "Vigilant Hub"
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 40
+        color: "#D8DEE9"
+        font.family: "Montserrat"
+        font.pixelSize: 40
+        font.weight: Font.Bold
+    }
+
+    // Video Stream
     Image {
         id: videoStream
-        width: parent.width * 0.5
-        height: parent.height * 0.67
+        width: parent.width * 0.65
+        height: parent.height * 0.65
         anchors.centerIn: parent
+        anchors.verticalCenterOffset: -20
         source: "image://cameraProvider/frame"
         cache: false
         asynchronous: true
 
         property int frameCounter: 0
-        onFrameCounterChanged: {
-            source = "image://cameraProvider/frame?" + frameCounter;
-            console.log("Refreshing image. Frame counter:", frameCounter);
-        }
+        onFrameCounterChanged: source = "image://cameraProvider/frame?" + frameCounter
 
         Timer {
             interval: 66  // 15 FPS
             running: true
             repeat: true
-            onTriggered: {
-                videoStream.frameCounter++;
-            }
-        }
-
-        onStatusChanged: {
-            if (status === Image.Ready) {
-                console.log("Image loaded successfully:", width, "x", height, "Frame counter:", frameCounter);
-            } else if (status === Image.Error) {
-                console.log("Failed to load image from cameraProvider. Frame counter:", frameCounter);
-            } else if (status === Image.Loading) {
-                console.log("Image is loading... Frame counter:", frameCounter);
-            }
+            onTriggered: videoStream.frameCounter++
         }
 
         Rectangle {
             anchors.fill: parent
             color: "transparent"
-            border.color: "#00FFFF"
-            border.width: 2
-        }
-    }
-
-    Rectangle {
-        id: omsWidget
-        width: parent.width * 0.25
-        height: parent.height
-        anchors.left: parent.left
-        color: Qt.rgba(0.54, 0.17, 0.89, 0.2)
-        border.color: "#8A2BE2"
-        border.width: 2
-
-        Column {
-            anchors.centerIn: parent
-            spacing: 10
-
-            Text {
-                text: "Seatbelt: YES"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
-            }
-            Text {
-                text: "Presence: Adult"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
+            border.color: "#5E81AC"
+            border.width: 3
+            radius: 12
+            Rectangle {
+                anchors.fill: parent
+                color: "transparent"
+                border.color: "#5E81AC"
+                border.width: 1
+                radius: 14
+                opacity: 0.6
             }
         }
     }
 
+    // Bottom Panel (Yawn + Head Pose + Eye Closure + Phone)
     Rectangle {
-        id: dmsWidget
-        width: parent.width * 0.25
-        height: parent.height
-        anchors.right: parent.right
-        color: Qt.rgba(0.12, 0.56, 1.0, 0.2)
-        border.color: "#1E90FF"
-        border.width: 2
+        id: bottomPanel
+        width: parent.width * 0.65
+        height: 60
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 20
+        color: Qt.rgba(0.15, 0.18, 0.25, 0.9)
+        radius: 10
+        border.color: "#4C566A"
+        border.width: 1
 
-        Column {
-            anchors.centerIn: parent
-            spacing: 10
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 20
 
             Text {
-                text: "Driver ID: XMC"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
+                id: yawnText
+                text: "Yawn " + (mlProcessor.yawnPercentage ? mlProcessor.yawnPercentage.toFixed(1) : "0.0") + "%"
+                color: {
+                    if (mlProcessor.yawnPercentage > 70) return "#BF616A"
+                    if (mlProcessor.yawnPercentage > 30) return "#D08770"
+                    return "#A3BE8C"
+                }
+                font.family: "Montserrat"
+                font.pixelSize: 18
+                font.weight: Font.Medium
+                Layout.alignment: Qt.AlignLeft
+                Behavior on text { PropertyAnimation { duration: 500 } }
             }
+
             Text {
-                text: "Eye Openness: 85%"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
+                id: headPoseText
+                text: "Head Pose " + (mlProcessor.headPosePercentage ? mlProcessor.headPosePercentage.toFixed(1) : "0.0") + "%"
+                color: {
+                    if (mlProcessor.headPosePercentage > 70) return "#BF616A"
+                    if (mlProcessor.headPosePercentage > 30) return "#D08770"
+                    return "#A3BE8C"
+                }
+                font.family: "Montserrat"
+                font.pixelSize: 18
+                font.weight: Font.Medium
+                Layout.alignment: Qt.AlignHCenter
+                Behavior on text { PropertyAnimation { duration: 500 } }
             }
+
             Text {
-                text: "Blinks/Min: 16"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
+                id: eyeClosureText
+                text: "Eye Closure " + (mlProcessor.eyeClosurePercentage ? mlProcessor.eyeClosurePercentage.toFixed(1) : "0.0") + "%"
+                color: {
+                    if (mlProcessor.eyeClosurePercentage > 70) return "#BF616A"
+                    if (mlProcessor.eyeClosurePercentage > 30) return "#D08770"
+                    return "#A3BE8C"
+                }
+                font.family: "Montserrat"
+                font.pixelSize: 18
+                font.weight: Font.Medium
+                Layout.alignment: Qt.AlignHCenter
+                Behavior on text { PropertyAnimation { duration: 500 } }
             }
+
             Text {
-                text: "Gaze: -18°, 7°"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
+                id: phoneText
+                text: "Phone " + (mlProcessor.phonePercentage ? mlProcessor.phonePercentage.toFixed(1) : "0.0") + "%"
+                color: {
+                    if (mlProcessor.phonePercentage > 70) return "#BF616A"
+                    if (mlProcessor.phonePercentage > 30) return "#D08770"
+                    return "#A3BE8C"
+                }
+                font.family: "Montserrat"
+                font.pixelSize: 18
+                font.weight: Font.Medium
+                Layout.alignment: Qt.AlignRight
+                Behavior on text { PropertyAnimation { duration: 500 } }
             }
-            Text {
-                text: "Distraction: NO"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
+        }
+    }
+
+    // Warning Message
+    Text {
+        id: warningText
+        text: {
+            let warnings = [];
+            if (mlProcessor.yawnPercentage > 10) warnings.push("Yawning");
+            if (mlProcessor.headPosePercentage > 10) warnings.push("Looking Away");
+            if (mlProcessor.eyeClosurePercentage > 10) warnings.push("Eyes Closed");
+            if (mlProcessor.phonePercentage > 10) warnings.push("Phone Usage");
+            if (warnings.length > 0) {
+                return "WARNING: " + warnings.join(" and ") + " Detected!"
             }
-            Text {
-                text: "Drowsiness: NO"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
-            }
-            Text {
-                text: "Cellphone: NO"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
-            }
-            Text {
-                text: "Smoking: NO"
-                color: "#FFFFFF"
-                font.family: "Arial"
-                font.pixelSize: 16
-                font.bold: true
-            }
+            return ""
+        }
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: bottomPanel.top
+        anchors.bottomMargin: 10
+        color: "#BF616A"
+        font.family: "Montserrat"
+        font.pixelSize: 20
+        font.weight: Font.Bold
+        visible: mlProcessor.yawnPercentage > 10 || mlProcessor.headPosePercentage > 10 || mlProcessor.eyeClosurePercentage > 10 || mlProcessor.phonePercentage > 10
+        Behavior on text { PropertyAnimation { duration: 500 } }
+        Behavior on opacity { PropertyAnimation { duration: 500 } }
+    }
+
+    // Debug Binding Issues
+    Connections {
+        target: mlProcessor
+        function onResultChanged() {
+            console.log("Result changed - Yawn:", mlProcessor.yawnPercentage, "Head Pose:", mlProcessor.headPosePercentage, "Eye Closure:", mlProcessor.eyeClosurePercentage, "Phone:", mlProcessor.phonePercentage)
+        }
+    }
+
+    // Subtle glow animation for video stream
+    SequentialAnimation {
+        running: true
+        loops: Animation.Infinite
+        PropertyAnimation {
+            target: videoStream
+            property: "opacity"
+            from: 1.0
+            to: 0.95
+            duration: 2000
+        }
+        PropertyAnimation {
+            target: videoStream
+            property: "opacity"
+            from: 0.95
+            to: 1.0
+            duration: 2000
         }
     }
 }

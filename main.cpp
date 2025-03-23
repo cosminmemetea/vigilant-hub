@@ -2,8 +2,10 @@
 #include <QQmlApplicationEngine>
 #include <QPermission>
 #include <QEventLoop>
+#include <QQmlContext>
 #include "CameraThread.h"
 #include "CameraProvider.h"
+#include "MLProcessor.h"
 
 int main(int argc, char *argv[])
 {
@@ -48,10 +50,17 @@ int main(int argc, char *argv[])
     engine.addImageProvider("cameraProvider", provider);
 
     CameraThread *camera = new CameraThread(0);
-    camera->setTargetResolution(640, 480);
+    camera->setTargetResolution(1280, 720);  // Match UI
     camera->setTargetFrameRate(15);
+
+    MLProcessor *mlProcessor = new MLProcessor;
+    engine.rootContext()->setContextProperty("mlProcessor", mlProcessor);
+    qDebug() << "MLProcessor initialized.";
+
     QObject::connect(camera, &CameraThread::frameReady, provider, &CameraProvider::updateImage, Qt::QueuedConnection);
+    QObject::connect(camera, &CameraThread::frameReady, mlProcessor, &MLProcessor::processFrame, Qt::QueuedConnection);
     QObject::connect(&app, &QGuiApplication::aboutToQuit, camera, &CameraThread::stop);
+    QObject::connect(&app, &QGuiApplication::aboutToQuit, mlProcessor, &MLProcessor::stop);
     camera->start();
 
     QObject::connect(
