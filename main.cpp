@@ -50,8 +50,8 @@ int main(int argc, char *argv[])
     engine.addImageProvider("cameraProvider", provider);
 
     CameraThread *camera = new CameraThread(0);
-    camera->setTargetResolution(1280, 720);  // Match UI
-    camera->setTargetFrameRate(15);
+    camera->setTargetResolution(320, 240);  // Reduce resolution to free up resources
+    camera->setTargetFrameRate(5);  // Reduce to 5 FPS to lower resource usage
 
     MLProcessor *mlProcessor = new MLProcessor;
     engine.rootContext()->setContextProperty("mlProcessor", mlProcessor);
@@ -61,6 +61,15 @@ int main(int argc, char *argv[])
     QObject::connect(camera, &CameraThread::frameReady, mlProcessor, &MLProcessor::processFrame, Qt::QueuedConnection);
     QObject::connect(&app, &QGuiApplication::aboutToQuit, camera, &CameraThread::stop);
     QObject::connect(&app, &QGuiApplication::aboutToQuit, mlProcessor, &MLProcessor::stop);
+
+    QObject::connect(camera, &CameraThread::frameReady, [](const QImage &frame) {
+        if (frame.isNull()) {
+            qWarning() << "CameraThread emitted null frame";
+        } else {
+            qDebug() << "CameraThread emitted frame with size:" << frame.size();
+        }
+    });
+
     camera->start();
 
     QObject::connect(
